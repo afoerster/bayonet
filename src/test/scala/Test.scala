@@ -3,22 +3,21 @@ import org.scalatest.FunSuite
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
-case class Target(name: String, job: () => Unit, parents: Seq[Target]) {
-  def run(): Task[Any] = {
-    if (parents.isEmpty) {
-      Task.gatherUnordered(Seq(Task(job())))
-    } else {
-      Task.gatherUnordered(parents.map(x => x.run())).flatMap(x => Task(job()))
-    }
+case class Target(name: String)( parents: Seq[Target])(job: () => Unit) {
+  def tasks(): Task[Any] = {
+    Task.gatherUnordered(parents.map(x => x.tasks()) :+ Task.now()).flatMap((b: scala.List[Any]) => Task(job()))
   }
 }
 
 class Test extends FunSuite {
   test("test") {
-    val grand = Target("grand", () => println("grand"), Seq())
-    val parent = Target("parent", () => println("parent"), Seq(grand))
-    val child = Target("child", () => println("child"), Seq(parent))
+    val parent = Target("parent")(Seq()) {
+      () => println("parent")
+    }
+    val child = Target("child")(Seq(parent)){
+      () => println("child")
+    }
 
-    for (x <- child.run()) x
+    for (x <- child.tasks()) x
   }
 }
