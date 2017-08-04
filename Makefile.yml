@@ -1,0 +1,11 @@
+---
+- name: one
+  dependencies:
+  - two
+  command: 'echo run me third'
+- name: two
+  command: 'echo run me second'
+  dependencies:
+  - three
+- name: three
+  command: 'echo run me first'
